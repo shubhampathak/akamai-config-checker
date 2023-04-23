@@ -10,56 +10,78 @@ import (
 )
 
 const (
-	stagingEdgeKeyStr    = "edgekey-staging"
-	productionEdgeKeyStr = "edgekey"
+	stagingEdgeKeySuffix    = ".edgekey-staging.net"
+	productionEdgeKeySuffix = ".edgekey.net"
 )
 
 var (
 	environment string
 )
 
-func netLookup(domain string) []net.IP {
-	domainEdgeIPs, err := net.LookupIP(domain)
-	if err != nil {
-		fmt.Fprintf(color.Output, "%s %s\n", color.RedString("[Error]"), "Invalid domain provided. Make sure you do not provide an edgeKey domain. Otherwise the lookup may fail.")
-		os.Exit(1)
+func validDomain(domain string) bool {
+	hostNames, err := net.LookupHost(domain)
+	if err != nil || len(hostNames) == 0 {
+		return false
 	}
-	return domainEdgeIPs
+	return true
 }
 
-func stagLookup(args args, domainCNAME string) []net.IP {
-	if strings.Contains(domainCNAME, productionEdgeKeyStr) {
-		domainStagingCNAME := strings.Replace(domainCNAME, productionEdgeKeyStr, stagingEdgeKeyStr, 1)
+func netLookup(domain string) ([]net.IP, error) {
+	domainEdgeIPs, err := net.LookupIP(domain)
+	return domainEdgeIPs, err
+}
+
+func stagLookup(domain, domainCNAME string) ([]net.IP, error) {
+	if strings.Contains(domainCNAME, productionEdgeKeySuffix) {
+		domainStagingCNAME := strings.Replace(domainCNAME, productionEdgeKeySuffix, stagingEdgeKeySuffix, 1)
 		return netLookup(domainStagingCNAME)
 	} else {
-		return netLookup(args.domain + "." + stagingEdgeKeyStr + ".net")
+		domainEdgeIPs, err := netLookup(domain + stagingEdgeKeySuffix)
+		if err != nil {
+			parts := strings.Split(domain, ".")
+			rootDomain := strings.Join(parts[len(parts)-2:], ".")
+			domainEdgeIPs, err := net.LookupIP(rootDomain + stagingEdgeKeySuffix)
+			if err != nil {
+				return nil, err
+			}
+			return domainEdgeIPs, nil
+		}
+		return domainEdgeIPs, nil
 	}
 }
 
-func prodLookup(args args, domainCNAME string) []net.IP {
-	if strings.Contains(domainCNAME, productionEdgeKeyStr) {
+func prodLookup(domain, domainCNAME string) ([]net.IP, error) {
+	if strings.Contains(domainCNAME, productionEdgeKeySuffix) {
 		return netLookup(domainCNAME)
 	} else {
-		return netLookup(args.domain + "." + productionEdgeKeyStr + ".net")
+		domainEdgeIPs, err := netLookup(domain + productionEdgeKeySuffix)
+		if err != nil {
+			parts := strings.Split(domain, ".")
+			rootDomain := strings.Join(parts[len(parts)-2:], ".")
+			domainEdgeIPs, err := net.LookupIP(rootDomain + productionEdgeKeySuffix)
+			if err != nil {
+				return nil, err
+			}
+			return domainEdgeIPs, nil
+		}
+		return domainEdgeIPs, nil
 	}
 }
 
-func lookup(args args) []net.IP {
+func lookup(domain string) []net.IP {
 	var edgeIPs []net.IP
-	domainCNAME, err := net.LookupCNAME(args.domain)
+	domainCNAME, err := net.LookupCNAME(domain)
 	if err != nil {
-		fmt.Fprintf(color.Output, "%s %s %v\n", color.RedString("[Error]"), "Invalid domain provided: ", err)
+		fmt.Fprintf(color.Output, "%s %s %v\n", color.RedString("[Error]"), "Invalid domain provided! Malformed input domain or list provided. ", err)
 		os.Exit(1)
 	}
-
 	switch environment {
 	case "staging":
-		edgeIPs = stagLookup(args, domainCNAME)
+		edgeIPs, _ = stagLookup(domain, domainCNAME)
 	case "production":
-		edgeIPs = prodLookup(args, domainCNAME)
+		edgeIPs, _ = prodLookup(domain, domainCNAME)
 	default:
-		edgeIPs = stagLookup(args, domainCNAME)
+		edgeIPs, _ = stagLookup(domain, domainCNAME)
 	}
-
 	return edgeIPs
 }

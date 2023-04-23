@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net"
 	"os"
 
 	"github.com/fatih/color"
@@ -27,17 +26,18 @@ func parseFlags() args {
 
 	flag.Parse()
 
-	if len(*domain) == 0 {
+	if len(*domain) == 0 && len(*list) == 0 {
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	hostNames, err := net.LookupHost(*domain)
-	if err != nil || len(hostNames) == 0 {
-		fmt.Fprintf(color.Output, "%s %s\n", color.RedString("[Error]"), "Invalid input! Please provide a valid domain.")
-		os.Exit(1)
-	} else {
-		fmt.Fprintf(color.Output, "%s\n", color.BlueString("Target Domain: ")+*domain)
+	if len(*domain) > 0 {
+		if validDomain(*domain) {
+			fmt.Fprintf(color.Output, "%s\n", color.BlueString("Target Domain: ")+*domain)
+		} else {
+			fmt.Fprintf(color.Output, "%s %s\n", color.RedString("[Error]"), "Invalid input! Please provide a valid domain.")
+			os.Exit(1)
+		}
 	}
 
 	var allowedEnvironment string

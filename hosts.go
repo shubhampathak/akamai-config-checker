@@ -37,6 +37,7 @@ func detectOS() (string, error) {
 	return hostsFile, nil
 }
 
+// readFile from the filepath and return file data in []byte and []string
 func readFile(filePath string) ([]byte, []string) {
 	fileData, err := os.ReadFile(filePath)
 	if err != nil {
@@ -62,52 +63,41 @@ func backupHostsFile(orignalHostsFileData []byte, hostsFile string) {
 }
 
 func addHostsEntry(args args, hostsFile string) {
-	edgeIPs := lookup(args) // Get Edge Server IPs
 	fmt.Fprintf(color.Output, "%s %s\n", color.BlueString("[Info]"), "Adding hosts entry...")
-
 	orignalHostsFileData, lines := readFile(hostsFile) // Read existing hosts file
 	backupHostsFile(orignalHostsFileData, hostsFile)   // Backup original hosts file
-	listLines := readList(args)                        // Read the list file
-
-	// Filter out the lines containing already added domain entry
-	filteredLines := make([]string, 0, len(lines))
-	for _, line := range lines {
-		if !strings.Contains(line, args.domain) && line != "" {
-			filteredLines = append(filteredLines, line)
-		}
-	}
-	// Append hosts entry <IP> <domain> at the end
-	filteredLines = append(filteredLines, edgeIPs[0].String()+" "+args.domain+"\n")
-
-	if len(listLines) > 0 {
-		filteredLines = append(filteredLines, listLines...)
-	}
-
-	// Join the lines back as a string
-	newData := strings.Join(filteredLines, "\n") // exclude delimiter for the last line
-
-	// Overwrite the file with the new content
-	err := os.WriteFile(linuxHostsFile, []byte(newData), 0644)
-	if err != nil {
-		fmt.Fprintf(color.Output, "%s %s\n", color.RedString("[Error]"), "Error writing file.")
-		os.Exit(1)
-	} else {
-		fmt.Fprintf(color.Output, "%s %s\n", color.GreenString("[Success]"), "Hosts entry was created.")
-	}
-}
-
-func readList(args args) []string {
-	if args.list != "" {
-		edgeIPs := lookup(args)
-		_, lines := readFile(args.list)
-		updatedLines := make([]string, 0, len(lines))
+	updatedLines := make([]string, 0, len(lines))
+	var newData string
+	if args.domain != "" {
+		edgeIPs := lookup(args.domain) // Get Edge Server IPs
 		for _, line := range lines {
-			if line != "" {
-				line = edgeIPs[0].String() + " " + line
+			if !strings.Contains(line, args.domain) && line != "" {
 				updatedLines = append(updatedLines, line)
 			}
 		}
-		return updatedLines
+		updatedLines = append(updatedLines, edgeIPs[0].String()+" "+args.domain)
+		newData = strings.Join(updatedLines, "\n") // exclude delimiter for the last line
+	} else if args.list != "" {
+		_, listLines := readFile(args.list) // Read the list file
+		for _, listLine := range listLines {
+			if !contains(lines, listLine) && validDomain(listLine) {
+				edgeIPs := lookup(listLine) // Get Edge Server IPs
+				listLine := edgeIPs[0].String() + " " + listLine
+				lines = append(lines, listLine)
+			}
+		}
+		// Join the lines back as a string
+		newData = strings.Join(lines, "\n") // exclude delimiter for the last line
+	} else {
+		fmt.Fprintf(color.Output, "%s %s\n", color.BlueString("[Error]"), "Something went wrong! Please try again")
+		os.Exit(1)
 	}
-	return nil
+	// Overwrite the file with the new content
+	err := os.WriteFile(linuxHostsFile, []byte(newData), 0644)
+	if err != nil {
+		fmt.Fprintf(color.Output, "%s %s\n %v", color.RedString("[Error]"), "Error writing file.", err)
+		os.Exit(1)
+	} else {
+		fmt.Fprintf(color.Output, "%s %s\n", color.GreenString("[Success]"), "Hosts entry was created/updated.")
+	}
 }
