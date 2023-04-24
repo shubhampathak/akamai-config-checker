@@ -14,10 +14,6 @@ const (
 	productionEdgeKeySuffix = ".edgekey.net"
 )
 
-var (
-	environment string
-)
-
 func validDomain(domain string) bool {
 	hostNames, err := net.LookupHost(domain)
 	if err != nil || len(hostNames) == 0 {
@@ -68,20 +64,20 @@ func prodLookup(domain, domainCNAME string) ([]net.IP, error) {
 	}
 }
 
-func lookup(domain string) []net.IP {
+func lookup(args args) []net.IP {
 	var edgeIPs []net.IP
-	domainCNAME, err := net.LookupCNAME(domain)
+	domainCNAME, err := net.LookupCNAME(args.domain)
 	if err != nil {
 		fmt.Fprintf(color.Output, "%s %s %v\n", color.RedString("[Error]"), "Invalid domain provided! Malformed input domain or list provided. ", err)
 		os.Exit(1)
 	}
-	switch environment {
+	switch args.environment {
 	case "staging":
-		edgeIPs, _ = stagLookup(domain, domainCNAME)
+		edgeIPs, _ = stagLookup(args.domain, domainCNAME)
 	case "production":
-		edgeIPs, _ = prodLookup(domain, domainCNAME)
+		edgeIPs, _ = prodLookup(args.domain, domainCNAME)
 	default:
-		edgeIPs, _ = stagLookup(domain, domainCNAME)
+		edgeIPs, _ = stagLookup(args.domain, domainCNAME)
 	}
 	return edgeIPs
 }

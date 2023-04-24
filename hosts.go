@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"log"
 	"os"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/fatih/color"
 )
@@ -49,27 +49,38 @@ func readFile(filePath string) ([]byte, []string) {
 	return fileData, lines
 }
 
-func backupHostsFile(orignalHostsFileData []byte, hostsFile string) {
-	// Create a backup file if it does not already exist
-	if _, err := os.Stat(hostsFile + ".bak"); errors.Is(err, fs.ErrNotExist) {
+// backupHostsFile makes a copy of the existing hosts file before making the changes
+func backupHostsFile(args args, orignalHostsFileData []byte, hostsFile string) {
+	if args.backup {
+		backupFile := hostsFile + time.Now().Format("2006-01-02--15-04-05.bak")
+		err := os.WriteFile(backupFile, orignalHostsFileData, 0644)
+		if err != nil {
+			fmt.Fprintf(color.Output, "%s %s\n %v", color.RedString("[Error]"), "Error creating a backup file.", err)
+			os.Exit(1)
+		} else {
+			fmt.Fprintf(color.Output, "%s %s\n", color.GreenString("[Success]"), "Backup of the existing hosts file is created as "+backupFile)
+		}
+	} else if _, err := os.Stat(hostsFile + ".bak"); errors.Is(err, fs.ErrNotExist) {
 		fmt.Fprintf(color.Output, "%s %s\n", color.YellowString("[Alert]"), "Creating a backup of the original Hosts file before making changes...")
 		err = os.WriteFile(hostsFile+".bak", orignalHostsFileData, 0644)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Fprintf(color.Output, "%s %s\n %v", color.RedString("[Error]"), "Error creating a backup file.", err)
+			os.Exit(1)
 		} else {
 			fmt.Fprintf(color.Output, "%s %s\n", color.GreenString("[Success]"), "Backup of the original hosts file is created as "+hostsFile+".bak")
 		}
 	}
 }
 
+// addHostsEntry takes arguments and hostsfile as input and writes entries back to it
 func addHostsEntry(args args, hostsFile string) {
 	fmt.Fprintf(color.Output, "%s %s\n", color.BlueString("[Info]"), "Adding hosts entry...")
-	orignalHostsFileData, lines := readFile(hostsFile) // Read existing hosts file
-	backupHostsFile(orignalHostsFileData, hostsFile)   // Backup original hosts file
+	orignalHostsFileData, lines := readFile(hostsFile)     // Read existing hosts file
+	backupHostsFile(args, orignalHostsFileData, hostsFile) // Backup original hosts file
 	updatedLines := make([]string, 0, len(lines))
 	var newData string
 	if args.domain != "" {
-		edgeIPs := lookup(args.domain) // Get Edge Server IPs
+		edgeIPs := lookup(args) // Get Edge Server IPs
 		for _, line := range lines {
 			if !strings.Contains(line, args.domain) && line != "" {
 				updatedLines = append(updatedLines, line)
@@ -81,7 +92,8 @@ func addHostsEntry(args args, hostsFile string) {
 		_, listLines := readFile(args.list) // Read the list file
 		for _, listLine := range listLines {
 			if !contains(lines, listLine) && validDomain(listLine) {
-				edgeIPs := lookup(listLine) // Get Edge Server IPs
+				args.domain = listLine
+				edgeIPs := lookup(args) // Get Edge Server IPs
 				listLine := edgeIPs[0].String() + " " + listLine
 				lines = append(lines, listLine)
 			}
