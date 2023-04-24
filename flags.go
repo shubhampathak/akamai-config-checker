@@ -11,18 +11,20 @@ import (
 type args struct {
 	domain      string // target domain name
 	list        string // filepath
-	environment string // environment
+	environment string // environment staging or production
+	backup      bool   // backup hosts file
 }
 
 func parseFlags() args {
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [-d domain] [-l list] [-e environment]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [-d domain] [-l list] [-e environment] [-b]\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 
 	domain := flag.String("d", "", "Target domain")
 	list := flag.String("l", "", "Full Path to list of sub-domains that have same origin IP address as of target domain")
 	environment := flag.String("e", "", "Environment against which you want to test. Available options: staging or production")
+	backup := flag.Bool("b", false, "Backup the existing hosts file before making changes to it")
 
 	flag.Parse()
 
@@ -50,5 +52,6 @@ func parseFlags() args {
 		domain:      *domain,
 		list:        *list,
 		environment: allowedEnvironment,
+		backup:      *backup,
 	}
 }
