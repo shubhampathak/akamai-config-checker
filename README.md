@@ -55,9 +55,9 @@ cd <path_to_downloaded_binary>
 akamai-config-checker -h
 ```
 
-
 ```
-Usage: sudo ./akamai-config-checker [-d domain] [-l list] [-e environment]
+Usage: ./akamai-config-checker [-d domain] [-l list] [-e environment] [-b]
+  -b    Backup the existing hosts file before making changes to it
   -d string
         Target domain
   -e string
@@ -74,6 +74,14 @@ sudo ./akamai-config-checker -d example.com
 2. To add entry for a list of domains/sub-domains:
 ``` bash
 sudo ./akamai-config-checker -l <path_to_list_file>
+```
+
+3. Use Backup flag `-b` to backup the existing hosts file. Please note that, if this flag is not provided, then the tool will automatically make a backup of the original hosts file with `hosts.bak` name only if the file with name `hosts.bak` is not already present in the hosts file directory.
+
+The backup flag `-b` always generates a new backup file `hosts--<date_with_time>.bak` from the existing hosts file. 
+
+``` bash
+sudo ./akamai-config-checker -l <path_to_list_file> -b
 ```
 
 3. Use `-e` environment flag `-e staging` if you want to test for staging or `-e production` if you want to test on production environment. If `-e` flag is not provided, then it will check for staging by default.
