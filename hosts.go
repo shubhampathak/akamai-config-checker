@@ -101,11 +101,11 @@ func addHostsEntry(args args, hostsFile string) {
 		// Join the lines back as a string
 		newData = strings.Join(lines, "\n") // exclude delimiter for the last line
 	} else {
-		fmt.Fprintf(color.Output, "%s %s\n", color.BlueString("[Error]"), "Something went wrong! Please try again")
+		fmt.Fprintf(color.Output, "%s %s\n", color.RedString("[Error]"), "Something went wrong! Please try again")
 		os.Exit(1)
 	}
 	// Overwrite the file with the new content
-	err := os.WriteFile(linuxHostsFile, []byte(newData), 0644)
+	err := os.WriteFile(hostsFile, []byte(newData), 0644)
 	if err != nil {
 		fmt.Fprintf(color.Output, "%s %s\n %v", color.RedString("[Error]"), "Error writing file.", err)
 		os.Exit(1)
