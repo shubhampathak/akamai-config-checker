@@ -1,8 +1,8 @@
 # Akamai Configuration Checker
-A command line tool to validate configuration on Akamai staging or production networks. This tool automates the process of finding staging/production Akamai Edge Hostname IPs for a provided domain(s) and adds the entries to the system's host file.
+A command-line tool that helps you validate configuration on Akamai staging and production networks. This tool automates the procedure for locating and adding Akamai Edge Hostname IPs for a specified domain(s) and then adding them to the system's host file. In short, it automates steps 1-4 mentioned in the [Akamai help document](https://techdocs.akamai.com/api-acceleration/docs/test-stage).
 
 ## Supported OS
-This tool should work on:
+This tool should work on the below-mentioned Operating Systems:
 
 - Linux based
 - Windows 
@@ -10,25 +10,24 @@ This tool should work on:
 
 ## Features
 
-This tool will:
+This tool will perform the following tasks:
 
-1. Find out the staging or production Akamai Edge Hostname of a given domain or list of domains.
-2. After that, it will look for the IPs assigned to the discovered EdgeKey Hostname.
-[Note: it only supports ".edgekey.net" based hostnames for now.]
-3. If a subdomain is using root domain's edgekey hostname, then it will query for the root domain's edge hostname instead.
-4. Upon finding the IP(s), it will first backup the original hosts file and add the entry[ies] to the system's hosts file.
+1. Find out the staging or production Akamai Edge Hostname of a given domain or a list of domain names.
+2. After that, it will look for the IPs assigned to the discovered EdgeKey Hostname. [Note: it only supports ".edgekey.net" based hostnames for now.]
+3. If a subdomain utilises the root domain's edge key hostname, it will query for the root domain's edge hostname instead.
+4. Upon finding the IP(s), it will back up the original hosts file and add the entry[ies] to the system's hosts file.
 
 ## Installation
 
-Download the pre-built binary from the [releases](https://github.com/shubhampathak/akamai-config-checker/releases) page.
-
-or 
-
-Use the below command to directly install it if you have the recent compiler:
+[Recommended] Use the below command to directly install it if you have the recent compiler:
 
 ```bash
 go install -v github.com/shubhampathak/akamai-config-checker@latest
 ```
+
+or
+
+Download the pre-built binary from the [releases](https://github.com/shubhampathak/akamai-config-checker/releases) page. 
 
 or 
 
@@ -41,7 +40,7 @@ go build
 
 ## Usage
 
-**Note: Since it makes changes to the system's hosts file, hence running the tool as sudo/admin user privilege is required.**
+**Note: Since it modifies the system's hosts file, that's why, running the tool as sudo/admin user privilege is required.**
 
 1. Linux/macOS users: 
 ```bash
@@ -52,7 +51,7 @@ sudo ./akamai-config-checker -h
 Open Powershell or command prompt as administrator and then run the executable.
 ```
 cd <path_to_downloaded_binary>
-akamai-config-checker -h
+.\akamai-config-checker.exe -h
 ```
 
 ```
@@ -76,13 +75,21 @@ sudo ./akamai-config-checker -d example.com
 sudo ./akamai-config-checker -l <path_to_list_file>
 ```
 
-3. Use Backup flag `-b` to backup the existing hosts file. Please note that, if this flag is not provided, then the tool will automatically make a backup of the original hosts file with `hosts.bak` name only if the file with name `hosts.bak` is not already present in the hosts file directory.The backup flag `-b` always generates a new backup file `hosts--<date_with_time>.bak` from the existing hosts file. 
+A list file can be a file that contains one domain/sub-domain per line:
+```
+example.com
+sub.example.com
+multi.level.example.edu
+test-api.example.org
+```
+
+3. Use the -b (backup) flag to back up the existing hosts file. If this flag is absent, the tool will automatically make a backup of the original hosts file as hosts.bak only if the hosts.bak is not already present in the hosts file directory. The backup flag -b always generates a new backup file hosts--<date_with_time>.bak from the existing hosts file.
 
 ``` bash
 sudo ./akamai-config-checker -l <path_to_list_file> -b
 ```
 
-4. Use `-e` environment flag `-e staging` if you want to test for staging or `-e production` if you want to test on production environment. If `-e` flag is not provided, then it will check for staging by default.
+4. Use the -e (environment) flag `-e staging` for testing on Akamai staging or `-e production` for testing on the Akamai production environment. If `-e` is not supplied, it will check for the staging environment as default.
 ``` bash
 sudo ./akamai-config-checker -d example.com -e staging
 ```
@@ -90,12 +97,12 @@ sudo ./akamai-config-checker -d example.com -e staging
 sudo ./akamai-config-checker -l <path_to_list_file> -e production
 ```
 
-Please note that if both `-d` (domain) and `-l` (list) flags are provided, then it will only use the `-d` flag. The list flag `-l` will be ignored.
+Please note that if both -d (domain) and -l (list) flags are present, then the input of the -l (list) flag will be ignored.
 
 ## License
 
 [MIT](https://github.com/shubhampathak/akamai-config-checker/blob/main/LICENSE)
 ## Disclaimer:
 
-This tool makes changes to system's hosts file, thus requires root privilege to run. It makes a backup of the original hosts file in the same directory. This repository's maintainer shall not be liable for any damage caused to the system or data due to the usage of this tool. 
+This tool modifies the system's hosts file, thus requiring root privilege to run. It makes a backup of the original hosts file in the same directory. This repository's maintainer shall not be liable for any damage caused to the system or data due to the usage of this tool.
 
