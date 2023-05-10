@@ -91,7 +91,7 @@ func addHostsEntry(args args, hostsFile string) {
 	} else if args.list != "" {
 		_, listLines := readFile(args.list) // Read the list file
 		for _, listLine := range listLines {
-			if !contains(lines, listLine) && validDomain(listLine) {
+			if !existsStr(lines, listLine) && validDomain(listLine) {
 				args.domain = listLine
 				edgeIPs := lookup(args) // Get Edge Server IPs
 				listLine := edgeIPs[0].String() + " " + listLine

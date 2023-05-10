@@ -2,10 +2,11 @@ package main
 
 import "strings"
 
-// contains is a commmon function to check if an input string is found in an array of string
-func contains(as []string, s string) bool {
-	for _, a := range as {
-		if strings.Contains(a, s) {
+// existsStr is a commmon function to check if a target string is found as suffix
+// in each element of the array and the elements are not commented with "#"
+func existsStr(arrStr []string, targetStr string) bool {
+	for _, str := range arrStr {
+		if strings.HasSuffix(str, " "+targetStr) && !strings.HasPrefix(str, "#") {
 			return true
 		}
 	}
