@@ -1,6 +1,7 @@
 # Akamai Configuration Checker
-A command-line tool that helps you validate configuration on Akamai staging and production networks. This tool automates the procedure for locating and adding Akamai Edge Hostname IPs for a specified domain(s) and then adding them to the system's host file. In short, it automates steps 1-4 mentioned in the [Akamai help document](https://techdocs.akamai.com/api-acceleration/docs/test-stage).
+A command-line tool that helps you validate configuration on Akamai staging and production networks. This tool automates the procedure for locating and adding Akamai Edge Hostname IPs for a specified domain(s) and then adding them to the system's host file. In short, it automates steps 2-4 mentioned in the respective [Akamai help document](https://techdocs.akamai.com/api-acceleration/docs/test-stage).
 
+![akamai-config-checker](https://github.com/shubhampathak/akamai-config-checker/assets/20816337/f6b29f70-8895-4a66-8f24-c350ab37a6ba)
 ## Supported OS
 This tool should work on the below-mentioned Operating Systems:
 
