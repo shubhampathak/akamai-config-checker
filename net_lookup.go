@@ -3,81 +3,76 @@ package main
 import (
 	"fmt"
 	"net"
-	"os"
 	"strings"
-
-	"github.com/fatih/color"
 )
 
 const (
-	stagingEdgeKeySuffix    = ".edgekey-staging.net"
-	productionEdgeKeySuffix = ".edgekey.net"
+	stagingEdgeKeySuffix      = ".edgekey-staging.net"
+	productionEdgeKeySuffix   = ".edgekey.net"
+	stagingEdgeSuiteSuffix    = ".edgesuite-staging.net"
+	productionEdgeSuiteSuffix = ".edgesuite.net"
 )
 
-func validDomain(domain string) bool {
-	hostNames, err := net.LookupHost(domain)
-	if err != nil || len(hostNames) == 0 {
-		return false
-	}
-	return true
-}
-
+// Perform a DNS lookup for a domain
 func netLookup(domain string) ([]net.IP, error) {
-	domainEdgeIPs, err := net.LookupIP(domain)
-	return domainEdgeIPs, err
+	return net.LookupIP(domain)
 }
 
-func stagLookup(domain, domainCNAME string) ([]net.IP, error) {
+// Helper function to handle staging and production lookups
+func edgeLookup(domain, domainCNAME, suffix string) ([]net.IP, error) {
+	var targetDomain string
+	// Check if the CNAME contains either production suffix
 	if strings.Contains(domainCNAME, productionEdgeKeySuffix) {
-		domainStagingCNAME := strings.Replace(domainCNAME, productionEdgeKeySuffix, stagingEdgeKeySuffix, 1)
-		return netLookup(domainStagingCNAME)
+		targetDomain = strings.Replace(domainCNAME, productionEdgeKeySuffix, suffix, 1)
+	} else if strings.Contains(domainCNAME, productionEdgeSuiteSuffix) {
+		targetDomain = strings.Replace(domainCNAME, productionEdgeSuiteSuffix, suffix, 1)
 	} else {
-		domainEdgeIPs, err := netLookup(domain + stagingEdgeKeySuffix)
-		if err != nil {
-			parts := strings.Split(domain, ".")
-			rootDomain := strings.Join(parts[len(parts)-2:], ".")
-			domainEdgeIPs, err := net.LookupIP(rootDomain + stagingEdgeKeySuffix)
-			if err != nil {
-				return nil, err
-			}
-			return domainEdgeIPs, nil
-		}
-		return domainEdgeIPs, nil
+		targetDomain = domain + suffix
 	}
-}
-
-func prodLookup(domain, domainCNAME string) ([]net.IP, error) {
-	if strings.Contains(domainCNAME, productionEdgeKeySuffix) {
-		return netLookup(domainCNAME)
-	} else {
-		domainEdgeIPs, err := netLookup(domain + productionEdgeKeySuffix)
-		if err != nil {
-			parts := strings.Split(domain, ".")
-			rootDomain := strings.Join(parts[len(parts)-2:], ".")
-			domainEdgeIPs, err := net.LookupIP(rootDomain + productionEdgeKeySuffix)
-			if err != nil {
-				return nil, err
-			}
-			return domainEdgeIPs, nil
-		}
-		return domainEdgeIPs, nil
-	}
-}
-
-func lookup(args args) []net.IP {
-	var edgeIPs []net.IP
-	domainCNAME, err := net.LookupCNAME(args.domain)
+	// Perform the DNS lookup
+	ips, err := netLookup(targetDomain)
 	if err != nil {
-		fmt.Fprintf(color.Output, "%s %s %v\n", color.RedString("[Error]"), "Invalid domain provided! Malformed input domain or list provided. ", err)
-		os.Exit(1)
+		// Handle cases where the root domain needs to be queried
+		parts := strings.Split(domain, ".")
+		if len(parts) < 2 {
+			return nil, fmt.Errorf("invalid domain format")
+		}
+		rootDomain := strings.Join(parts[len(parts)-2:], ".")
+		ips, err = netLookup(rootDomain + suffix)
+		if err != nil {
+			return nil, err
+		}
 	}
+	return validateIPs(ips)
+}
+
+// Lookup IPs for staging or production environments
+func lookup(args args) ([]net.IP, error) {
+	// Determine the suffix based on the environment
+	var suffix string
 	switch args.environment {
 	case "staging":
-		edgeIPs, _ = stagLookup(args.domain, domainCNAME)
+		// Use staging suffixes
+		if strings.Contains(args.domain, ".edgesuite.net") {
+			suffix = stagingEdgeSuiteSuffix
+		} else {
+			suffix = stagingEdgeKeySuffix
+		}
 	case "production":
-		edgeIPs, _ = prodLookup(args.domain, domainCNAME)
+		// Use production suffixes
+		if strings.Contains(args.domain, ".edgesuite.net") {
+			suffix = productionEdgeSuiteSuffix
+		} else {
+			suffix = productionEdgeKeySuffix
+		}
 	default:
-		edgeIPs, _ = stagLookup(args.domain, domainCNAME)
+		return nil, fmt.Errorf("unsupported environment: %s", args.environment)
 	}
-	return edgeIPs
+
+	// Perform the edge lookup
+	domainCNAME, err := net.LookupCNAME(args.domain)
+	if err != nil {
+		return nil, fmt.Errorf("invalid domain provided: %v", err)
+	}
+	return edgeLookup(args.domain, domainCNAME, suffix)
 }

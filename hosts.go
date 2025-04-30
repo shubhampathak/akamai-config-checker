@@ -80,7 +80,12 @@ func addHostsEntry(args args, hostsFile string) {
 	updatedLines := make([]string, 0, len(lines))
 	var newData string
 	if args.domain != "" {
-		edgeIPs := lookup(args) // Get Edge Server IPs
+		// Process single domain (-d flag)
+		edgeIPs, err := lookup(args) // Get Edge Server IPs
+		if err != nil {
+			fmt.Fprintf(color.Output, "%s %s %v\n", color.RedString("[Error]"), "Failed to lookup IPs for domain:", err)
+			return
+		}
 		for _, line := range lines {
 			if !strings.Contains(line, args.domain) && line != "" {
 				updatedLines = append(updatedLines, line)
@@ -89,11 +94,26 @@ func addHostsEntry(args args, hostsFile string) {
 		updatedLines = append(updatedLines, edgeIPs[0].String()+" "+args.domain)
 		newData = strings.Join(updatedLines, "\n") // exclude delimiter for the last line
 	} else if args.list != "" {
+		// Process list of domains (-l flag)
 		_, listLines := readFile(args.list) // Read the list file
+		fmt.Fprintf(color.Output, "%s %s\n", color.BlueString("[Info]"), "Domain list file found! The program will only process the domains that are valid and behind Akamai.")
+		processedDomains := make(map[string]bool)
 		for _, listLine := range listLines {
-			if !existsStr(lines, listLine) && validDomain(listLine) {
+			if processedDomains[listLine] {
+				continue
+			}
+			processedDomains[listLine] = true
+			isValid, err := isValidDomainAndBehindAkamai(listLine)
+			if err != nil || !isValid {
+				continue
+			}
+			if !existsStr(lines, listLine) {
 				args.domain = listLine
-				edgeIPs := lookup(args) // Get Edge Server IPs
+				edgeIPs, err := lookup(args)
+				if err != nil {
+					fmt.Fprintf(color.Output, "%s %s %v\n", color.RedString("[Error]"), "Failed to lookup IPs for domain:", err)
+					continue
+				}
 				listLine := edgeIPs[0].String() + " " + listLine
 				lines = append(lines, listLine)
 			}
