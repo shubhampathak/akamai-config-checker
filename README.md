@@ -1,27 +1,27 @@
 # Akamai Configuration Checker
-A command-line tool that helps you validate configuration on Akamai staging and production networks. This tool automates the procedure for locating and adding Akamai Edge Hostname IPs for a specified domain(s) and then adding them to the system's host file. In short, it automates steps 2-4 mentioned in the respective [Akamai help document](https://techdocs.akamai.com/api-acceleration/docs/test-stage).
+A command-line tool that helps you validate configurations on Akamai staging and production networks. This tool automates the procedure for locating and adding Akamai Edge Hostname IPs for a specified domain(s) and then adding them to the system's hosts file. In short, it automates steps 2-4 mentioned in the respective [Akamai help document](https://techdocs.akamai.com/api-acceleration/docs/test-stage).
 
 ![akamai-config-checker](https://github.com/shubhampathak/akamai-config-checker/assets/20816337/f6b29f70-8895-4a66-8f24-c350ab37a6ba)
-## Supported OS
-This tool should work on the below-mentioned Operating Systems:
 
-- Linux based
-- Windows 
+## Supported OS
+This tool works on the following operating systems:
+- Linux-based
+- Windows
 - macOS
 
-## Features
-
-This tool will perform the following tasks:
-
-1. Find out the staging or production Akamai Edge Hostname of a given domain or a list of domain names.
-2. After that, it will look for the IPs assigned to the discovered EdgeKey Hostname. [Note: it only supports ".edgekey.net" based hostnames for now.]
-3. If a subdomain utilises the root domain's edge key hostname, it will query for the root domain's edge hostname instead.
-4. Upon finding the IP(s), it will back up the original hosts file and add the entry[ies] to the system's hosts file.
+## Tasks
+This tool performs the following tasks:
+1. Finds the staging or production Akamai Edge Hostname of a given domain or a list of domain names.
+2. Supports both `.edgekey.net` and `.edgesuite.net` based Akamai hostnames for the detection.
+3. Resolves the IPs assigned to the discovered Edge Hostname.
+4. If a subdomain uses the root domain's edge hostname, it queries the root domain's edge hostname instead.
+5. Validates domains and ensures they are behind Akamai before adding them to the hosts file.
+6. Backs up the original hosts file before making changes.
+7. Adds validated entries to the system's hosts file.
 
 ## Installation
-
-[Recommended] Use the below command to directly install it if you have the recent compiler:
-
+### Recommended Installation
+Use the following command to install the tool if you have the Go compiler installed:
 ```bash
 go install -v github.com/shubhampathak/akamai-config-checker@latest
 ```
